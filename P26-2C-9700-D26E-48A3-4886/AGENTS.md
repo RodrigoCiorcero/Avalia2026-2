@@ -1,34 +1,45 @@
-# Documentação de Engenharia de Agentes e Harness (P26-2C-9700-D26E-48A3-4886)
+# AGENTS.md — Engenharia de Agentes (Projeto #29: Kudos Board)
 
-> **Requisito da Rubrica (25 pontos):** Uso obrigatório de no mínimo **3 agentes diferentes** (sendo obrigatoriamente **1 agente dedicado a teste e validação**), documentando em qual *harness* operaram e relacionando as *skills* na pasta `skills/`.
+Chave Única: `P26-2C-9700-D26E-48A3-4886`
 
-## 1. Ambiente de Orquestração (Harness Utilizado)
+## Resumo e transparência
 
-- **Harness Principal:** *(Descreva aqui qual harness foi utilizado, ex: Antigravity / Claude Code / Cursor / Cline / GitHub Copilot Workspace / OpenHands)*
-- **Modelo(s) Base:** *(Informe os modelos utilizados pelos agentes)*
-- **Estratégia de Coordenação:** Os agentes operaram de forma modular sobre a subpasta `P26-2C-9700-D26E-48A3-4886/`, compartilhando especificações de banco de dados D1, contratos JSON das Cloudflare Pages Functions e verificação automatizada via `validar-local.mjs`.
+Este projeto foi desenvolvido com **um único agente de IA**: o **Claude (Anthropic), em conversa no claude.ai** (modelo Claude Sonnet 5.5). Esse agente atuou em **três papéis, em sequência**, cada um guiado por um skill da pasta `skills/`.
 
----
+Os papéis **não foram executados por três agentes independentes**. A execução de comandos (terminal, deploy, testes) foi feita pelo estudante, que copiou o código gerado pelo agente e reportou os resultados de volta na conversa. O agente não teve acesso direto à máquina do estudante.
 
-## 2. Agentes Criados e Responsabilidades (Mínimo de 3 Agentes)
+## Harness (ambiente)
 
-### Agente 1: Arquiteto Serverless, Cloudflare D1 e Segurança Discord OAuth2
-- **Papel:** Modelagem do esquema relacional SQLite no Cloudflare D1 (`migrations/0001_init.sql`), implementação do fluxo de autenticação Discord OAuth2 e validação das regras de negócio no servidor (`functions/`).
-- **Skill Utilizada:** [`skills/serverless-d1-discord/SKILL.md`](./skills/serverless-d1-discord/SKILL.md)
-- **Entregas Realizadas:**
-  - Estruturação das tabelas e índices no Cloudflare D1.
-  - Proteção das rotas serverless contra manipulação no cliente.
+| Item | Detalhe |
+|---|---|
+| Agente | Claude (Anthropic), chat do claude.ai |
+| Interface | Conversa com texto e imagens (prints do terminal e do navegador) |
+| Execução | Pelo estudante: Git Bash, Node.js (Scoop), Wrangler 4.x |
+| Infraestrutura | Cloudflare Pages + Pages Functions + D1; Discord OAuth2 |
 
-### Agente 2: Especialista em Interface Web Vanilla (HTML5, CSS3 e DOM)
-- **Papel:** Construção da interface responsiva e acessível utilizando exclusivamente HTML5 semântico, CSS3 moderno (sem sombras em fontes) e JavaScript puro (Vanilla JS), consumindo as rotas serverless via `fetch`.
-- **Skill Utilizada:** [`skills/vanilla-dom-ui/SKILL.md`](./skills/vanilla-dom-ui/SKILL.md)
-- **Entregas Realizadas:**
-  - Componentes visuais em `public/index.html`, `public/styles.css` e `public/app.js`.
-  - Inclusão do cabeçalho de perfil do Discord (`user_id`, nome e avatar) e rodapé oficial com a Chave Única `P26-2C-9700-D26E-48A3-4886`.
+## Papéis e skills
 
-### Agente 3: Agente de Teste, Auditoria de Segurança e Validação (Obrigatório)
-- **Papel:** Verificação independente de ponta a ponta: inspeção de contratos de API, tentativa de contorno das validações do servidor, auditoria da rubrica de 100 pontos e execução de testes funcionais.
-- **Skill Utilizada:** [`skills/teste-validacao/SKILL.md`](./skills/teste-validacao/SKILL.md)
-- **Entregas Realizadas:**
-  - Bateria de verificação de integridade dos endpoints e conformidade com a rubrica (`validar-local.mjs` e casos de teste documentados abaixo).
-  - Relatório de validação confirmando ausência de frameworks proibidos, presença da licença MIT e funcionamento no Cloudflare.
+| Papel | Skill utilizado | O que foi feito |
+|---|---|---|
+| Backend | `skills/serverless-d1-discord/SKILL.md` | Migração `0002_kudos.sql` (tabela `kudos` com `CHECK (from_id <> to_id)`); endpoints em `functions/api/` (`kudos`, `users`, `badges`, `me`, `logout`, `status`); sessão em cookie assinado com HMAC-SHA256 (`functions/_lib/session.js`), no lugar do cookie sem assinatura do esqueleto |
+| Interface | `skills/vanilla-dom-ui/SKILL.md` | `public/index.html`, `styles.css` e `app.js` em Vanilla JS: formulário, selos, grade (CSS Grid), filtros Recebidos/Enviados por perfil, rodapé com a chave. DOM montado com `textContent` (sem `innerHTML` com dados de usuário) |
+| Teste e validação | `skills/teste-validacao/SKILL.md` | Script `testes.mjs` executado contra o site publicado; teste manual da regra de auto-elogio; saída em `relatorios/saida-testes.txt` |
+
+## Regras de negócio validadas no servidor
+
+- O remetente vem do cookie de sessão assinado, nunca do corpo da requisição.
+- Auto-elogio bloqueado (`self_kudos`), além da restrição `CHECK` no banco.
+- Selo validado contra lista fixa; mensagem entre 3 e 280 caracteres; destinatário precisa existir.
+- Verificação de `Origin` no POST; limite de 5 envios por minuto por usuário (implementado, **não coberto** pelos testes automatizados).
+- Filtros `received`/`sent` validados por expressão regular e consultas parametrizadas.
+
+## Resultados dos testes (executados em 20/11/2026)
+
+- `node testes.mjs` contra `https://kudos-board-2c.pages.dev`: **8/8 testes passaram** (selos, `/api/me` sem login, POST sem login = 401, cookie forjado = 401, Origin externo = 403, filtro inválido = 400, tentativa de SQL injection = 400, listagem = 200).
+- Teste manual, logado, enviando kudos ao próprio ID: resposta `self_kudos` (rejeitado pelo servidor).
+
+## Limitações
+
+- O requisito de **três agentes distintos** não foi cumprido: houve um agente em três papéis.
+- Não houve revisão cruzada por outro agente; os problemas corrigidos foram os identificados pelo próprio agente durante o desenvolvimento (cookie de sessão sem assinatura no esqueleto original).
+- Não foram testados automaticamente: limite de envios, mensagem fora do tamanho, selo inválido e destinatário inexistente.
