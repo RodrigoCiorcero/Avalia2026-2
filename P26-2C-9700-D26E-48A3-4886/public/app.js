@@ -122,8 +122,12 @@
   }
 
   async function logout() {
-    try { await api("/api/logout", { method: "POST" }); } catch { /* ignora */ }
-    location.reload();
+    try {
+      await api("/api/logout", { method: "POST" });
+      location.reload();
+    } catch {
+      flash("Não foi possível sair da conta.", "error");
+    }
   }
 
   function updateCounter() {

@@ -60,3 +60,7 @@ small { color: var(--muted); }
 .footer { background: var(--card); border-top: 1px solid var(--line); text-align: center; padding: 16px; font-size: .85rem; color: var(--muted); }
 .footer code { color: var(--ink); font-weight: 600; }
 @media (max-width: 520px) { .filters label { min-width: 100%; } }
+button:focus-visible, a.btn:focus-visible, select:focus-visible, textarea:focus-visible {
+  outline: 2px solid var(--brand-dark);
+  outline-offset: 3px;
+}
